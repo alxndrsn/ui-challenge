@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
@@ -7,16 +8,18 @@
         integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
         crossorigin=""></script>
     <style>
-      #map { height:800px }
+      #map { height:800px; margin-top:10px }
+      #statusContainer { margin-top:10px }
+      input:invalid { border:red solid 3px; }
     </style>
   </head>
   <body>
     <div id="content">
-      <!-- from: https://stackoverflow.com/a/54796814 -->
-      <input type="text" minlength="7" maxlength="15" size="15" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" id="ipAddressInput"/>
+      <!-- regex from: https://stackoverflow.com/a/54796814 -->
+      <input type="text" minlength="7" maxlength="15" size="15" pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" id="ipAddressInput" disabled/>
 
-      <button id="lookupButton" onclick="lookupClicked()">Look up</button>
-      <div>
+      <button id="lookupButton" onclick="lookupClicked()" disabled>Look up</button>
+      <div id="statusContainer">
         Status: <span id="statusText">[none]</span>
       </div>
 
@@ -28,6 +31,11 @@
       let map, pin;
 
       initPage();
+
+      // look up IP with initial textfield value, which will either be:
+      //   * no arg, which will look up the client's IP, or
+      //   * a cached value, relevant to the user
+      lookupClicked();
 
       function initPage() {
         const queryParams = new URLSearchParams(window.location.search);
@@ -53,9 +61,14 @@
 
       async function lookupClicked() {
         const btn = document.getElementById('lookupButton');
-        btn.setAttribute("disabled", "disabled");
+        const input = document.getElementById('ipAddressInput');
 
-        const ip = document.getElementById('ipAddressInput').value;
+        if(!input.checkValidity()) return alert('Please enter a valid IP address.');
+
+        btn.setAttribute("disabled", "disabled");
+        input.setAttribute("disabled", "disabled");
+
+        const ip = input.value;
         updateStatus(`Looking up IP: ${ip}`);
 
         try {
@@ -68,13 +81,15 @@
 
           if(res.status !== 'success') return;
 
-          const { lat, lon } = res;
+          const { lat, lon, query } = res;
           setMapPin(lat, lon);
+          input.value = query;
         } catch(err) {
           log(err);
           updateStatus(`Failed with unhandled error: ${err}`);
         } finally {
           btn.removeAttribute('disabled');
+          input.removeAttribute('disabled');
         }
       }
 
