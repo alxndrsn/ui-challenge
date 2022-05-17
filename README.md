@@ -5,8 +5,8 @@ This is a NodeJS project.
 
 To initialise:
 
-	yarn
+	npx yarn
 
 To start:
 
-	yarn start
+	npx yarn start
